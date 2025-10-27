@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- ⚡ Quan trọng: giúp hiển thị đẹp trên điện thoại -->
+  <title>Rắn Săn Mồi Của Noc🖕</title>
+  <style>
+    body {
+      background-color: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+      color: white;
+      overflow: hidden;
+    }
+
+    h1 {
+      margin-top: 10px;
+      font-size: 28px;
+      text-align: center;
+    }
+
+    canvas {
+      border: 2px solid #555;
+      background: url("img/bg.png") no-repeat center;
+      background-size: cover;
+      width: 90vw;   /* Tự co theo chiều ngang */
+      height: 90vw;  /* Giữ tỉ lệ vuông */
+      max-width: 600px;
+      max-height: 600px;
+    }
+
+    #score {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 10px;
+      gap: 10px;
+    }
+
+    .speed-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .arrow-grid {
+      display: grid;
+      grid-template-areas:
+        ". up ."
+        "left down right";
+      gap: 10px;
+    }
+
+    button {
+      width: 55px;
+      height: 55px;
+      font-size: 22px;
+      border: none;
+      border-radius: 12px;
+      background-color: #333;
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Rắn Săn Mồi Của Noc🖕</h1>
+  <div id="score">Điểm: 0</div>
+  <canvas id="game"></canvas>
+
+  <div class="controls">
+    <div class="speed-controls">
+      <button onclick="changeSpeed(1)">＋</button>
+      <button onclick="changeSpeed(-1)">－</button>
+    </div>
+    <div class="arrow-grid">
+      <button style="grid-area: up" onclick="changeDir('UP')">▲</button>
+      <button style="grid-area: left" onclick="changeDir('LEFT')">◀</button>
+      <button style="grid-area: down" onclick="changeDir('DOWN')">▼</button>
+      <button style="grid-area: right" onclick="changeDir('RIGHT')">▶</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    // Khi thay đổi kích thước màn hình -> tự cập nhật kích thước canvas
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    const box = 20;
+    let snake, food, dir, score, walls, speed, game;
+
+    function initGame() {
+      snake = [{ x: 10 * box, y: 10 * box }];
+      food = {
+        x: Math.floor(Math.random() * 19 + 1) * box,
+        y: Math.floor(Math.random() * 19 + 1) * box,
+      };
+      dir = null;
+      score = 0;
+      document.getElementById("score").innerText = "Điểm: " + score;
+      walls = createWalls();
+      speed = 200;
+      clearInterval(game);
+      game = setInterval(draw, speed);
+    }
+
+    function createWalls() {
+      const numWalls = Math.floor(Math.random() * 5) + 4; // 4–8 tường
+      const arr = [];
+      for (let i = 0; i < numWalls; i++) {
+        arr.push({
+          x: Math.floor(Math.random() * 19 + 1) * box,
+          y: Math.floor(Math.random() * 19 + 1) * box,
+        });
+      }
+      return arr;
+    }
+
+    function changeDir(d) {
+      if (d === "LEFT" && dir !== "RIGHT") dir = "LEFT";
+      if (d === "UP" && dir !== "DOWN") dir = "UP";
+      if (d === "RIGHT" && dir !== "LEFT") dir = "RIGHT";
+      if (d === "DOWN" && dir !== "UP") dir = "DOWN";
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") changeDir("LEFT");
+      else if (e.key === "ArrowUp") changeDir("UP");
+      else if (e.key === "ArrowRight") changeDir("RIGHT");
+      else if (e.key === "ArrowDown") changeDir("DOWN");
+    });
+
+    function changeSpeed(delta) {
+      speed = Math.max(50, Math.min(400, speed - delta * 20));
+      clearInterval(game);
+      game = setInterval(draw, speed);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Vẽ rắn
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "orange" : "lime";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // Vẽ thức ăn
+      ctx.fillStyle = "red";
+      ctx.fillRect(food.x, food.y, box, box);
+
+      // Vẽ tường
+      ctx.fillStyle = "#666";
+      walls.forEach((w) => ctx.fillRect(w.x, w.y, box, box));
+
+      let headX = snake[0].x;
+      let headY = snake[0].y;
+
+      if (dir === "LEFT") headX -= box;
+      if (dir === "UP") headY -= box;
+      if (dir === "RIGHT") headX += box;
+      if (dir === "DOWN") headY += box;
+
+      // Xuyên tường
+      if (headX >= canvas.width) headX = 0;
+      if (headX < 0) headX = canvas.width - box;
+      if (headY >= canvas.height) headY = 0;
+      if (headY < 0) headY = canvas.height - box;
+
+      // Ăn mồi
+      if (Math.abs(headX - food.x) < box && Math.abs(headY - food.y) < box) {
+        score++;
+        document.getElementById("score").innerText = "Điểm: " + score;
+        food = {
+          x: Math.floor(Math.random() * 19 + 1) * box,
+          y: Math.floor(Math.random() * 19 + 1) * box,
+        };
+      } else {
+        snake.pop();
+      }
+
+      const newHead = { x: headX, y: headY };
+
+      // Va vào chính mình hoặc tường → reset game
+      for (let part of snake) {
+        if (part.x === newHead.x && part.y === newHead.y) return initGame();
+      }
+      for (let wall of walls) {
+        if (wall.x === newHead.x && wall.y === newHead.y) return initGame();
+      }
+
+      snake.unshift(newHead);
+    }
+
+    initGame();
+  </script>
+</body>
+</html>
